@@ -1,0 +1,2 @@
+C:/Users/Denzel/Desktop/school/lvl6/CPD/CPDHomeAssignment2025/home_management_app/android/app/.cxx/RelWithDebInfo/6h3f3n2d/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/Denzel/Desktop/school/lvl6/CPD/CPDHomeAssignment2025/home_management_app/android/app/.cxx/RelWithDebInfo/6h3f3n2d/arm64-v8a/CMakeFiles/rebuild_cache.dir
