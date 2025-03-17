@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';   
+import 'package:flutter/material.dart';
 
 class Chore {
-  const Chore({
+  Chore({
     required this.id,
     required this.name,
     required this.description,
     required this.userId,
     required this.dueDate,
-    required this.completed,
+    this.completed = false,
   });
 
   final String id;
@@ -15,5 +15,5 @@ class Chore {
   final String description;
   final String userId;
   final DateTime dueDate;
-  final bool completed;
+  bool completed;
 }

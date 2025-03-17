@@ -4,6 +4,7 @@ import 'create_group_screen.dart';
 import 'package:home_management_app/data/dummy_data.dart';
 import 'package:home_management_app/models/user.dart';
 import 'package:home_management_app/models/group.dart';
+import 'package:home_management_app/screens/chores_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final User user;
@@ -70,10 +71,10 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to the ChoresScreen
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => Text('Chores')),
+                        MaterialPageRoute(
+                            builder: (context) => ChoresScreen(user: user)),
                       );
                     },
                     child: Text('Chores'),
