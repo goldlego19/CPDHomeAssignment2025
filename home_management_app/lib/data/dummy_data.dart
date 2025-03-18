@@ -65,20 +65,37 @@ final List<Chore> dummyChores = [
   ),
 ];
 
-// Dummy Shopping Items
+// Dummy Shopping List Items
 final List<ShoppingItem> dummyShoppingItems = [
   ShoppingItem(
     id: '1',
     name: 'Milk',
-    userId: '1',
-    quantity: 2,
-    completed: false,
+    purchased: false,
+    groupId: '101', // Belongs to Smith Family
   ),
   ShoppingItem(
     id: '2',
+    name: 'Eggs',
+    purchased: false,
+    groupId: '101',
+  ),
+  ShoppingItem(
+    id: '3',
     name: 'Bread',
-    userId: '2',
-    quantity: 1,
-    completed: true,
+    purchased: true, // Already bought
+    groupId: '101',
+  ),
+  ShoppingItem(
+    id: '4',
+    name: 'Rice',
+    purchased: false,
+    groupId: '102', // Belongs to Doe Family
+  ),
+  ShoppingItem(
+    id: '5',
+    name: 'Chicken',
+    purchased: true,
+    groupId: '102',
   ),
 ];
+

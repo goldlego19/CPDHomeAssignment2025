@@ -1,17 +1,33 @@
-import 'package:flutter/material.dart';   
-
 class ShoppingItem {
-  const ShoppingItem({
+  String id;
+  String name;
+  bool purchased;
+  String groupId; // To link items to a specific group
+
+  ShoppingItem({
     required this.id,
     required this.name,
-    required this.userId,
-    required this.quantity,
-    required this.completed,
+    this.purchased = false,
+    required this.groupId,
   });
 
-  final String id;
-  final String name;
-  final String userId;
-  final int quantity;
-  final bool completed;
+  // Convert to JSON (for Firebase)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'purchased': purchased,
+      'groupId': groupId,
+    };
+  }
+
+  // Create a ShoppingItem from JSON (for Firebase)
+  static ShoppingItem fromJson(Map<String, dynamic> json) {
+    return ShoppingItem(
+      id: json['id'],
+      name: json['name'],
+      purchased: json['purchased'],
+      groupId: json['groupId'],
+    );
+  }
 }

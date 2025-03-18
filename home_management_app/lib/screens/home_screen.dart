@@ -5,6 +5,7 @@ import 'package:home_management_app/data/dummy_data.dart';
 import 'package:home_management_app/models/user.dart';
 import 'package:home_management_app/models/group.dart';
 import 'package:home_management_app/screens/chores_list_screen.dart';
+import 'package:home_management_app/screens/shopping_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final User user;
@@ -85,7 +86,7 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => Text('Shopping List')),
+                            builder: (context) => ShoppingListScreen(user: user)),
                       );
                     },
                     child: Text('Shopping List'),
