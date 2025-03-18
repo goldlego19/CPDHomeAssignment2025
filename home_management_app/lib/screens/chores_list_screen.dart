@@ -155,174 +155,209 @@ class _ChoresScreenState extends State<ChoresScreen> {
     return dummyUsers.where((user) => user.groupId == groupId).toList();
   }
 
-  void _showAddChoreDialog(BuildContext context) {
-    final _nameController = TextEditingController();
-    final _descriptionController = TextEditingController();
-    DateTime? _selectedDateTime;
-    User? _selectedUser;
-    List<User> groupMembers = getGroupMembers(widget.user.groupId);
+void _showAddChoreDialog(BuildContext context) {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  DateTime? _selectedDateTime;
+  User? _selectedUser;
+  List<User> groupMembers = dummyUsers.where((user) => user.groupId == widget.user.groupId).toList();
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            void _pickDateTime() async {
-              // Pick a date
-              DateTime? pickedDate = await showDatePicker(
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          void _pickDateTime() async {
+            DateTime? pickedDate = await showDatePicker(
+              context: context,
+              initialDate: _selectedDateTime ?? DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime(2100),
+            );
+
+            if (pickedDate != null) {
+              TimeOfDay? pickedTime = await showTimePicker(
                 context: context,
-                initialDate: _selectedDateTime ?? DateTime.now(),
-                firstDate: DateTime.now(),
-                lastDate: DateTime(2100),
+                initialTime: TimeOfDay.now(),
               );
 
-              if (pickedDate != null) {
-                // Pick a time after selecting the date
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.now(),
-                );
-
-                if (pickedTime != null) {
-                  setState(() {
-                    _selectedDateTime = DateTime(
-                      pickedDate.year,
-                      pickedDate.month,
-                      pickedDate.day,
-                      pickedTime.hour,
-                      pickedTime.minute,
-                    );
-                  });
-                }
+              if (pickedTime != null) {
+                setState(() {
+                  _selectedDateTime = DateTime(
+                    pickedDate.year,
+                    pickedDate.month,
+                    pickedDate.day,
+                    pickedTime.hour,
+                    pickedTime.minute,
+                  );
+                });
               }
             }
+          }
 
-            return AlertDialog(
-              title: Text('Add Chore'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(labelText: 'Chore Name'),
-                  ),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(labelText: 'Description'),
-                  ),
-                  DropdownButtonFormField<User>(
-                    value: _selectedUser,
-                    hint: Text('Assign to'),
-                    items: groupMembers.map((user) {
-                      return DropdownMenuItem(
-                        value: user,
-                        child: Text(user.name),
-                      );
-                    }).toList(),
-                    onChanged: (User? newValue) {
-                      setState(() {
-                        _selectedUser = newValue;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _pickDateTime,
-                    child: Text(
-                      _selectedDateTime == null
-                          ? 'Select Due Date & Time'
-                          : 'Due: ${DateFormat('EEE d MMM, HH:mm').format(_selectedDateTime!)}',
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+          return AlertDialog(
+            title: Text("Add Chore"),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(labelText: "Chore Name", border: OutlineInputBorder()),
                 ),
-                TextButton(
-                  onPressed: () {
-                    if (_nameController.text.isNotEmpty &&
-                        _descriptionController.text.isNotEmpty &&
-                        _selectedDateTime != null &&
-                        _selectedUser != null) {
-                      _addChore(
-                        _nameController.text,
-                        _descriptionController.text,
-                        _selectedDateTime!,
-                        _selectedUser!.id,
-                      );
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please fill all fields')),
-                      );
-                    }
+                SizedBox(height: 10),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(labelText: "Description", border: OutlineInputBorder()),
+                ),
+                SizedBox(height: 10),
+                DropdownButtonFormField<User>(
+                  value: _selectedUser,
+                  hint: Text("Assign to"),
+                  items: groupMembers.map((user) {
+                    return DropdownMenuItem(
+                      value: user,
+                      child: Text(user.name),
+                    );
+                  }).toList(),
+                  onChanged: (User? newValue) {
+                    setState(() {
+                      _selectedUser = newValue;
+                    });
                   },
-                  child: Text('Add'),
+                ),
+                SizedBox(height: 10),
+                
+                // 🔹 Row Layout for Date and Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 📅 Selected Date Text
+                    Expanded(
+                      child: Text(
+                        _selectedDateTime == null
+                            ? "No date selected"
+                            : "Due: ${DateFormat('EEE d MMM, HH:mm').format(_selectedDateTime!)}",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    
+                    // 🕒 Calendar Icon Button
+                    IconButton(
+                      icon: Icon(Icons.calendar_today, color: Colors.deepPurpleAccent),
+                      onPressed: _pickDateTime,
+                      tooltip: "Pick a date",
+                    ),
+                  ],
                 ),
               ],
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
+              TextButton(
+                onPressed: () {
+                  if (_nameController.text.isNotEmpty &&
+                      _descriptionController.text.isNotEmpty &&
+                      _selectedDateTime != null &&
+                      _selectedUser != null) {
+                    _addChore(_nameController.text, _descriptionController.text, _selectedDateTime!, _selectedUser!.id);
+                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please fill all fields")));
+                  }
+                },
+                child: Text("Add"),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chores'),
+        title: Text("Chores", style: TextStyle(color: Colors.white)),
+        leading: IconButton(
+          icon: Icon(Icons.home, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        backgroundColor: Colors.deepPurple.shade700,
       ),
-      body: chores.isEmpty
-          ? Center(
-              child: Text(
-                'No Chores Found',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            )
-          : ListView.builder(
-              itemCount: chores.length,
-              itemBuilder: (context, index) {
-                final chore = chores[index];
-                return ListTile(
-                  title: Text(chore.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(chore.description),
-                      Text('Due: ${formatDueDate(chore.dueDate.toLocal())}'),
-                      Text(
-                        'Assigned to: ${dummyUsers.firstWhere(
-                              (u) => u.id == chore.userId,
-                              orElse: () => User(
-                                id: '',
-                                name: 'Unknown',
-                                email: '',
-                                password: '',
-                                role: '',
-                                groupId: '',
-                              ),
-                            ).name}',
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: chores.isEmpty
+            ? Center(
+                child: Text(
+                  "No Chores Found",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              )
+            : ListView.builder(
+                padding: EdgeInsets.all(16),
+                itemCount: chores.length,
+                itemBuilder: (context, index) {
+                  final chore = chores[index];
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 5,
+                    margin: EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.all(16),
+                      title: Text(
+                        chore.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          decoration: chore.completed ? TextDecoration.lineThrough : null,
+                          color: chore.completed ? Colors.grey : Colors.black,
+                        ),
                       ),
-                    ],
-                  ),
-                  trailing: Checkbox(
-                    value: chore.completed,
-                    onChanged: (value) {
-                      _toggleChoreCompletion(index);
-                    },
-                  ),
-                );
-              },
-            ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: 5),
+                          Text(chore.description),
+                          SizedBox(height: 5),
+                          Text("Due: ${formatDueDate(chore.dueDate.toLocal())}"),
+                          SizedBox(height: 5),
+                          Text(
+                            "Assigned to: ${dummyUsers.firstWhere(
+                              (u) => u.id == chore.userId,
+                              orElse: () => User(id: '', name: 'Unknown', email: '', password: '', role: '', groupId: ''),
+                            ).name}",
+                          ),
+                        ],
+                      ),
+                      trailing: Checkbox(
+                        value: chore.completed,
+                        onChanged: (value) => _toggleChoreCompletion(index),
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showAddChoreDialog(context);
         },
-        child: Icon(Icons.add),
+        backgroundColor: Colors.white,
+        child: Icon(Icons.add, color: Colors.deepPurple),
       ),
     );
   }

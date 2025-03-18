@@ -2,6 +2,7 @@ import 'package:home_management_app/models/chore.dart';
 import 'package:home_management_app/models/group.dart';
 import 'package:home_management_app/models/shopping_item.dart';
 import 'package:home_management_app/models/user.dart';
+import 'package:home_management_app/models/fridge_image.dart';
 
 // Dummy Users
 final List<User> dummyUsers = [
@@ -99,3 +100,12 @@ final List<ShoppingItem> dummyShoppingItems = [
   ),
 ];
 
+
+final List<FridgeImage> dummyFridgeImages = [
+  FridgeImage(
+    id: '1',
+    path: 'assets/images/fridge_sample.jpg', // Placeholder image
+    groupId: '101', // Smith Family
+    lastUpdated: DateTime.now().subtract(Duration(days: 1)), // Yesterday
+  ),
+];

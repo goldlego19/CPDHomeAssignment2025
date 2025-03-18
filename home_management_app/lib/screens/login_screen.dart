@@ -48,59 +48,86 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  return null;
-                },
+      
+      body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            elevation: 5,
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Login", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurpleAccent,
+                        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                    SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => RegisterScreen()),
+                        );
+                      },
+                      child: Text("Don't have an account? Register", style: TextStyle(color: Colors.deepPurple)),
+                    ),
+                  ],
+                ),
               ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _login,
-                child: Text('Login'),
-              ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  // Navigate to the RegisterScreen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RegisterScreen()),
-                  );
-                },
-                child: Text('Don\'t have an account? Register'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
