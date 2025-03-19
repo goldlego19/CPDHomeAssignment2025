@@ -1,12 +1,12 @@
 class FridgeImage {
   final String id;
-  final String path; // Path or URL of the image
+  final String base64; // Path or URL of the image
   final String groupId; // Link to a specific group
   final DateTime lastUpdated;
 
   FridgeImage({
     required this.id,
-    required this.path,
+    required this.base64,
     required this.groupId,
     required this.lastUpdated,
   });
@@ -15,7 +15,7 @@ class FridgeImage {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'path': path,
+      'base64': base64,
       'groupId': groupId,
       'lastUpdated': lastUpdated.toIso8601String(),
     };
@@ -25,7 +25,7 @@ class FridgeImage {
   static FridgeImage fromJson(Map<String, dynamic> json) {
     return FridgeImage(
       id: json['id'],
-      path: json['path'],
+      base64: json['base64'],
       groupId: json['groupId'],
       lastUpdated: DateTime.parse(json['lastUpdated']),
     );

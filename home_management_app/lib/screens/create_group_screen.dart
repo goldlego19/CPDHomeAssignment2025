@@ -1,13 +1,12 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:home_management_app/models/user.dart';
-import 'package:home_management_app/models/group.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'home_screen.dart';
-import 'package:home_management_app/data/dummy_data.dart';
 
 class CreateGroupScreen extends StatefulWidget {
-  final User user;
+  final String userId; // User ID from Firebase
 
-  CreateGroupScreen({required this.user});
+  CreateGroupScreen({required this.userId});
 
   @override
   _CreateGroupScreenState createState() => _CreateGroupScreenState();
@@ -16,73 +15,88 @@ class CreateGroupScreen extends StatefulWidget {
 class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _groupNameController = TextEditingController();
-  final _groupDescriptionController = TextEditingController();
-  String? _selectedGroupId; // To store the selected group ID
+  bool _isLoading = false;
 
-  void _joinGroup() {
-    if (_selectedGroupId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select a group to join')),
-      );
-      return;
-    }
+  final DatabaseReference _groupsRef = FirebaseDatabase.instanceFor(
+    app: Firebase.app(),
+    databaseURL:
+        'https://cpd-nestease-denzelbaldacchino-default-rtdb.europe-west1.firebasedatabase.app',
+  ).ref("groups");
+  final DatabaseReference _usersRef = FirebaseDatabase.instanceFor(
+    app: Firebase.app(),
+    databaseURL:
+        'https://cpd-nestease-denzelbaldacchino-default-rtdb.europe-west1.firebasedatabase.app',
+  ).ref("users");
 
-    // Find the user in the dummyUsers list and update their groupId
-    final userIndex =
-        dummyUsers.indexWhere((user) => user.id == widget.user.id);
-    if (userIndex != -1) {
-      dummyUsers[userIndex] = User(
-        id: widget.user.id,
-        name: widget.user.name,
-        email: widget.user.email,
-        password: widget.user.password,
-        role: widget.user.role,
-        groupId: _selectedGroupId!, // Update the groupId
-      );
-    }
-
-    // Navigate back to the HomeScreen with the updated user
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(user: dummyUsers[userIndex]),
-      ),
-    );
-  }
-
-  void _createGroup() {
+  Future<void> _createGroup() async {
     if (_formKey.currentState!.validate()) {
-      // Create a new group with a meaningful ID
-      final group = Group(
-        id: 'group_${DateTime.now().millisecondsSinceEpoch}', // Unique ID
-        name: _groupNameController.text,
-        description: _groupDescriptionController.text,
-      );
-
-      // Add the new group to the dummy data
-      dummyGroups.add(group);
-
-      // Find the user in the dummyUsers list and update their groupId
-      final userIndex =
-          dummyUsers.indexWhere((user) => user.id == widget.user.id);
-      if (userIndex != -1) {
-        dummyUsers[userIndex] = User(
-          id: widget.user.id,
-          name: widget.user.name,
-          email: widget.user.email,
-          password: widget.user.password,
-          role: widget.user.role,
-          groupId: group.id, // Update the groupId
-        );
+      if (mounted) {
+        setState(() => _isLoading = true);
       }
 
-      // Navigate back to the HomeScreen with the updated user
+      try {
+        // Create a new group with a unique ID
+        DatabaseReference newGroupRef = _groupsRef.push();
+        String groupId = newGroupRef.key!;
+
+        await newGroupRef.set({
+          "id": groupId,
+          "name": _groupNameController.text,
+        });
+
+        // Update the user's groupId in Firebase
+        await _usersRef.child(widget.userId).update({"groupId": groupId});
+
+        // Navigate to Home Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => HomeScreen(userId: widget.userId)),
+        );
+      } catch (e) {
+        _showError("Failed to create group. Please try again.");
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _joinGroup(String groupId) async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+    try {
+      final snapshot = await _groupsRef.child(groupId).get();
+      if (!snapshot.exists) {
+        _showError("Group not found. Please check the ID.");
+        return;
+      }
+
+      // Update user's groupId in Firebase
+      await _usersRef.child(widget.userId).update({"groupId": groupId});
+
+      // Navigate to Home Screen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(user: dummyUsers[userIndex]),
-        ),
+            builder: (context) => HomeScreen(userId: widget.userId)),
       );
+    } catch (e) {
+      _showError("Failed to join group. Please try again.");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -90,72 +104,151 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create/Join Group'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Dropdown to select an existing group
-            DropdownButtonFormField<String>(
-              value: _selectedGroupId,
-              hint: Text('Select a group to join'),
-              items: dummyGroups.map((group) {
-                return DropdownMenuItem(
-                  value: group.id,
-                  child: Text(group.name),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedGroupId = value;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _joinGroup,
-              child: Text('Join Selected Group'),
-            ),
-            SizedBox(height: 20),
-            Divider(), // Separator between join and create options
-            SizedBox(height: 20),
-            // Form to create a new group
-            Form(
-              key: _formKey,
+          title: Text("Create / Join Group",
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white)),
+          leading: IconButton(
+            icon:
+                Icon(Icons.arrow_back_ios, color: Colors.white), // 🏠 Home Icon
+            onPressed: () {
+              Navigator.pop(context); // Navigates back to the previous screen
+            },
+          ),
+          backgroundColor: Colors.deepPurple.shade700),
+      body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Card(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            elevation: 5,
+            child: Padding(
+              padding: EdgeInsets.all(20),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextFormField(
-                    controller: _groupNameController,
-                    decoration: InputDecoration(labelText: 'Group Name'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a group name';
-                      }
-                      return null;
-                    },
+                  Text("Create a Group",
+                      style:
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 15),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _groupNameController,
+                          decoration: InputDecoration(
+                              labelText: "Group Name",
+                              border: OutlineInputBorder()),
+                          validator: (value) {
+                            if (value == null || value.isEmpty)
+                              return "Please enter a group name";
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 15),
+                        _isLoading
+                            ? CircularProgressIndicator()
+                            : ElevatedButton(
+                                onPressed: _createGroup,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepPurple,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 14, horizontal: 20),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: Text("Create Group",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white)),
+                              ),
+                      ],
+                    ),
                   ),
-                  TextFormField(
-                    controller: _groupDescriptionController,
-                    decoration: InputDecoration(labelText: 'Group Description'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a group description';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _createGroup,
-                    child: Text('Create New Group'),
-                  ),
+                  SizedBox(height: 30),
+                  Text("OR",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 10),
+                  Text("Join an existing group",
+                      style: TextStyle(fontSize: 16)),
+                  SizedBox(height: 15),
+                  _isLoading
+                      ? CircularProgressIndicator()
+                      : ElevatedButton(
+                          onPressed: () {
+                            _showJoinGroupDialog();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 20),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text("Join Group",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  void _showJoinGroupDialog() {
+    final _groupIdController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Join Group"),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Enter the Group ID to join"),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _groupIdController,
+                decoration: InputDecoration(
+                    labelText: "Group ID", border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context), child: Text("Cancel")),
+            TextButton(
+              onPressed: () {
+                if (_groupIdController.text.isNotEmpty) {
+                  _joinGroup(_groupIdController.text);
+                  Navigator.pop(context);
+                }
+              },
+              child: Text("Join"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

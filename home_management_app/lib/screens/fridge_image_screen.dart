@@ -1,127 +1,168 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:home_management_app/models/fridge_image.dart';
-import 'package:home_management_app/data/dummy_data.dart';
-import 'package:home_management_app/models/user.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 
-
 class FridgeImageScreen extends StatefulWidget {
-  final User user;
+  final String userId;
+  final String groupId;
 
-  FridgeImageScreen({required this.user});
+  FridgeImageScreen({required this.userId, required this.groupId});
 
   @override
   _FridgeImageScreenState createState() => _FridgeImageScreenState();
 }
 
 class _FridgeImageScreenState extends State<FridgeImageScreen> {
-  FridgeImage? fridgeImage;
-  final ImagePicker _picker = ImagePicker();
+  late final DatabaseReference _dbRef;
+  String? _imageUrl;
+  DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
-    _fetchFridgeImage();
-  }
-  String getSuffix(int day) {
-    if (day >= 11 && day <= 13) {
-      return 'th';
-    }
-    switch (day % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
+    _dbRef = FirebaseDatabase.instanceFor(
+      app: Firebase.app(),
+      databaseURL:
+          'https://cpd-nestease-denzelbaldacchino-default-rtdb.europe-west1.firebasedatabase.app',
+    ).ref("fridgeImages/${widget.groupId}");
+
+    _fetchLatestFridgeImage();
   }
 
-  String formatlastUpdatedDate(DateTime lastUpdated) {
-    final day = lastUpdated.day;
-    final suffix = getSuffix(day);
-    return DateFormat('EEE d\'$suffix\' MMMM, HH:mm').format(lastUpdated);
-  }
+  Future<void> _fetchLatestFridgeImage() async {
+    final snapshot = await _dbRef.get();
+    if (snapshot.exists) {
+      final imageData = snapshot.value as Map<dynamic, dynamic>;
 
-
-  // Fetch the latest fridge image for the user's group
-  void _fetchFridgeImage() {
-    setState(() {
-      fridgeImage = dummyFridgeImages.firstWhere(
-        (image) => image.groupId == widget.user.groupId,
-        orElse: () => FridgeImage(
-          id: '',
-          path: '',
-          groupId: widget.user.groupId,
-          lastUpdated: DateTime.now(),
-        ),
+      // Convert Firebase data into FridgeImage object
+      FridgeImage fridgeImage = FridgeImage.fromJson(
+        Map<String, dynamic>.from(imageData),
       );
-    });
+      if (mounted) {
+        setState(() {
+          _imageUrl = fridgeImage.base64;
+          _lastUpdated = fridgeImage.lastUpdated;
+        });
+      }
+    }
   }
 
-  // Take a new fridge photo
-  Future<void> _updateFridgeImage() async {
-  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-  if (image == null) return;
+  Future<void> _uploadImage(File imageFile) async {
+    try {
+      // Convert image to Base64
+      List<int> imageBytes = await imageFile.readAsBytes();
+      String base64Image = base64Encode(imageBytes);
 
-  print("Picked image path: ${image.path}"); // Debugging
+      // Create a unique ID for the image
+      String imageId = "fridge_${widget.groupId}";
 
-  setState(() {
-    fridgeImage = FridgeImage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      path: image.path, // Ensure this path is correct
-      groupId: widget.user.groupId,
-      lastUpdated: DateTime.now(),
-    );
+      // Get the timestamp
+      DateTime timestamp = DateTime.now();
 
-    // Remove previous fridge image for this group
-    dummyFridgeImages.removeWhere((img) => img.groupId == widget.user.groupId);
-    dummyFridgeImages.add(fridgeImage!);
-  });
+      // Create FridgeImage object
+      FridgeImage fridgeImage = FridgeImage(
+        id: imageId,
+        base64: base64Image,
+        groupId: widget.groupId,
+        lastUpdated: DateTime.now(),
+      );
 
-  print("Stored image path: ${fridgeImage!.path}"); // Debugging
-}
+      // Upload the object to Firebase
+      await _dbRef.set(fridgeImage.toJson());
 
+      if (mounted) {
+        setState(() {
+          _imageUrl = fridgeImage.base64;
+          _lastUpdated = fridgeImage.lastUpdated;
+        });
+      }
+
+      print("Image uploaded successfully.");
+    } catch (e) {
+      print("Error uploading image: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to upload image. Error: $e")),
+      );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      File imageFile = File(pickedFile.path);
+      _uploadImage(imageFile);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Fridge Image")),
-      body: Center(
-        child: fridgeImage == null || fridgeImage!.path.isEmpty
-            ? Text("No fridge image available")
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildImage(fridgeImage!.path),
-                  SizedBox(height: 10),
-                  Text("Last updated: ${formatlastUpdatedDate(fridgeImage!.lastUpdated.toLocal())}"),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _updateFridgeImage,
-                    child: Text("Update Image"),
-                  ),
-                ],
+      appBar: AppBar(
+          title: Text("Fridge Image", style: TextStyle(color: Colors.white)),
+          leading: IconButton(
+            icon:
+                Icon(Icons.arrow_back_ios, color: Colors.white), // 🏠 Home Icon
+            onPressed: () {
+              Navigator.pop(context); // Navigates back to the previous screen
+            },
+          ),
+          backgroundColor: Colors.deepPurple.shade700),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _imageUrl == null
+                  ? Text("No fridge image available",
+                      style: TextStyle(fontSize: 18, color: Colors.white))
+                  : Column(
+                      children: [
+                        _imageUrl == null
+                            ? Text("No fridge image available",
+                                style: TextStyle(
+                                    fontSize: 18, color: Colors.white))
+                            : Image.memory(
+                                base64Decode(_imageUrl!),
+                                height: 500,
+                                fit: BoxFit.cover,
+                              ),
+                        SizedBox(height: 10),
+                        Text(
+                          "Last Updated: ${DateFormat('EEE d MMM, HH:mm').format(_lastUpdated!.toLocal())}",
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+              SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _pickImage,
+                icon: Icon(Icons.camera_alt),
+                label: Text("Update Image"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  Widget _buildImage(String imagePath) {
-    File file = File(imagePath);
-
-    if (!file.existsSync()) {
-      return Text("Image file not found.");
-    }
-
-    try {
-      return Image.file(file, height: 300, width: 300, fit: BoxFit.cover);
-    } catch (e) {
-      return Text("Error loading image: $e");
-    }
   }
 }
