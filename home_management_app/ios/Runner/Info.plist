@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- ===== Added Push Notification Configurations ===== -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	
+	<key>UNNotificationPresentationOptions</key>
+	<array>
+		<string>badge</string>
+		<string>sound</string>
+		<string>alert</string>
+	</array>
+	
+	<!-- Privacy description for notifications-->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We send notifications to keep you updated about your home management tasks</string>
 </dict>
 </plist>
