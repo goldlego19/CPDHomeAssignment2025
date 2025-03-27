@@ -1,0 +1,44 @@
+# Name of the Workflow: Flutter CI
+name: Flutter CI
+# When to trigger the workflow
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job to run flutter tests
+  test:
+    name: Run Flutter Tests
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - uses: actions/checkout@v4
+      # Setup Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.13.0"
+      # install dependencies
+      - run: flutter pub get
+      # Run tests
+      - run: flutter test
+  # Job to build APK/IPA
+  build:
+    name: Build APK/IPA
+    needs: test # This job depends on the test job
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - uses: actions/checkout@v4
+      # Setup Flutter
+      - uses: subosito/flutter-action@v2
+      # Install dependencies
+      - run: flutter pub get
+      # Build APK
+      - run: flutter build apk --release
+      # Upload the APK as an artifact
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release-apk # Name of the artifact
+          path: build/app/outputs/flutter-apk/app-release.apk # Path to the APK

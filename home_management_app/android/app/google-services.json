@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "822114791422",
+    "project_id": "cpd-nestease-denzelbaldacchino",
+    "storage_bucket": "cpd-nestease-denzelbaldacchino.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822114791422:android:dfd9d0d32ea52680f31aaf",
+        "android_client_info": {
+          "package_name": "com.example.home_management_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7gYPyxNGvMKOI25cRS5GJdWGF1N4U1Wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
